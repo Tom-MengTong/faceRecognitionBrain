@@ -8,12 +8,7 @@ import Register from '../components/Register/Register';
 import FaceRecognition from '../components/FaceRecognition/FaceRecognition';
 import './App.css';
 import Particles from 'react-particles-js';
-import Clarifai from 'clarifai';
 
-
-const app = new Clarifai.App({
- apiKey: '923f46a9870a4775829b072e8e7a5221'
-});
 
 const particlesOptions = {
     particles: {
@@ -59,25 +54,26 @@ const calculateFaceLocation = (response) => {
 	return boxLocation
 }
 
+const initialState = {
+	input: '',
+	imgUrl: '',
+	box: '',
+	route: 'signin',
+	isSignedIn: false,
+	user:{
+		id: '',
+		name: '',
+		email: '',
+		entries: 0,
+		joined: ''
+	}
+}
 
 class App extends Component {
 
 	constructor(){
 		super();
-		this.state={
-			input: '',
-			imgUrl: '',
-			box: '',
-			route: 'signin',
-			isSignedIn: false,
-			user:{
-				id: '',
-				name: '',
-				email: '',
-				entries: 0,
-				joined: ''
-			}
-		}
+		this.state = initialState;
 	}
 
 	loadUser = (data) => {
@@ -103,10 +99,17 @@ class App extends Component {
 
 	onPictureSubmit = () => {
 		this.setState({imgUrl: this.state.input});
-		app.models.predict(Clarifai.FACE_DETECT_MODEL, this.state.input)
+		fetch('https://vast-savannah-52616.herokuapp.com/imagePredict', {
+			method: 'post',
+			headers: {'Content-Type': 'application/json'},
+			body: JSON.stringify({
+				imgUrl: this.state.input
+			})
+		})
+		.then( response => response.json() )
 		.then( response => {
 			if (response){
-				fetch('http://localhost:3000/image', {
+				fetch('https://vast-savannah-52616.herokuapp.com/image', {
 					method: 'put',
 					headers: {'Content-Type': 'application/json'},
 					body: JSON.stringify({
@@ -117,6 +120,7 @@ class App extends Component {
 				.then(count => {
 					this.setState(Object.assign(this.state.user,{entries: count}))
 				})
+				.catch(console.log);
 			}
 			this.drawBox(calculateFaceLocation(response))
 		})
@@ -125,11 +129,11 @@ class App extends Component {
 
 	changeRoute = (route) => {
 		if (route === 'signout'){
-			this.setState({isSignedIn: false})
+			this.setState(initialState);
 		} else if (route === 'home'){
-			this.setState({isSignedIn: true})
+			this.setState({isSignedIn: true});
 		}
-		this.setState({route: route})
+		this.setState({route: route});
 	}
 
 	render(){
